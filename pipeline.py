@@ -1,5 +1,5 @@
 # region IMPORTS ===
-import shutil
+import shutil, os, logging, uuid, subprocess, torch
 from mlflow.store.db_migrations.versions.bd07f7e963c5_create_index_on_run_uuid import depends_on
 from torch.utils.data import Dataset, Subset
 from transformers import (
@@ -9,7 +9,6 @@ from sklearn.model_selection import train_test_split
 from zenml import step, pipeline
 from typing import Annotated, Tuple
 from libs.types import TextDataset, compute_metrics
-import torch
 from torch.utils.data import Dataset
 from transformers import (
     CamembertTokenizer,
@@ -20,9 +19,6 @@ from transformers import (
 )
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Subset
-import logging
-import uuid
-import subprocess
 import pandas as pd
 # endregion
 
@@ -144,14 +140,28 @@ def treat_dataset(df, target_column="article_contenu_text"):
 # endregion
 @step #region data:save_dataset
 def save_dataset(df, version = "v0.1-beta", update_latest=True):
+    os.makedirs("./datasets/"+version+"/", exist_ok=True)
     df.to_csv("./datasets/"+version+"/data.csv")
     if update_latest:
         df.to_csv("./datasets/latest/data.csv")
     return True
 #endregion
-@step #region all:push_dvc
-def push_dvc(depends_on=None):
+@step #region all:dvc_push_models
+def dvc_push_models(clear_cache_with=None, depends_on=None):
     try:
+        subprocess.run(["dvc", "add", "models"], check=True)
+        subprocess.run(["dvc", "commit"], check=True)
+        subprocess.run(["dvc", "push"], check=True)
+        return True
+    except FileNotFoundError:
+        print("Pas de DVC")
+        return False
+#endregion
+@step #region all:dvc_push_datasets
+def dvc_push_datasets(clear_cache_with=None, depends_on=None):
+    try:
+        subprocess.run(["dvc", "add", "datasets"], check=True)
+        subprocess.run(["dvc", "commit"], check=True)
         subprocess.run(["dvc", "push"], check=True)
         return True
     except FileNotFoundError:
@@ -167,7 +177,7 @@ def pipeline_dataset(version):
         df_r = extract_lines(df)
         df_t = treat_dataset(df_r)
         _ = save_dataset(df_t, version=version)
-        push_dvc(depends_on=_)
+        dvc_push_datasets(depends_on=_, clear_cache_with=version)
 
 @pipeline # region pipeline_test
 def pipeline_test():
@@ -185,7 +195,7 @@ def pipeline_test():
             learning_rate=5e-5,
         )
         res = save_cache(model_cache, "test", overwrite=True)
-        push_dvc(depends_on=res)
+        dvc_push_models(depends_on=res, clear_cache_with=uuid.uuid4())
 # enregion
 
 if __name__ == "__main__":
