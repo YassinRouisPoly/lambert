@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-load_model("v3")
+load_model("v1")
 
 app.add_middleware(
     CORSMiddleware,

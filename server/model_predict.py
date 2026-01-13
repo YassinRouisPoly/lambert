@@ -13,8 +13,10 @@ def is_loaded() -> bool:
 
 def load_model(model_name="base"):
     global model, tokenizer
-    model_dir = "../models/" + model_name
-    tokenizer = CamembertTokenizer.from_pretrained(model_dir)
+    base_dir = "../models/" + model_name
+    model_dir = base_dir + "/model"
+    tokenizer_dir = base_dir + "/tokenizer"
+    tokenizer = CamembertTokenizer.from_pretrained(tokenizer_dir)
     model = CamembertForMaskedLM.from_pretrained(model_dir).to(device)
     model.eval()
 

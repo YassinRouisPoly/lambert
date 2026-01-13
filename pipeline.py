@@ -179,6 +179,13 @@ def pipeline_dataset(version):
         _ = save_dataset(df_t, version=version)
         dvc_push_datasets(depends_on=_, clear_cache_with=version)
 
+
+def _get_model(model_cache):
+    return CamembertForMaskedLM.from_pretrained("./cache/trains/"+model_cache+"/model")
+
+def _eval_model(trainer):
+    return trainer.evaluate()
+
 @pipeline # region pipeline_test
 def pipeline_test():
     res = pull_dvc()
