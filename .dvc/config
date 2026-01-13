@@ -1,0 +1,5 @@
+[core]
+    remote = minio
+['remote "minio"']
+    url = s3://lambert-bucket
+    endpointurl = http://localhost:9000/
