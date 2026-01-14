@@ -18,10 +18,13 @@ def objective(trial):
         per_device_eval_batch_size=8,
         learning_rate=learning_rate,
     )
-    evals = pipel._eval_model(pipel._get_model(model_cache))
+    evals = pipel._eval_model(pipel._get_model(str(model_cache)))
     return evals["loss"]
 
 @pipeline
 def train_optimization():
     study = optuna.create_study()
-    study.optimize()
+    study.optimize(func=objective, n_trials=5)
+
+if __name__ == "__main__":
+    train_optimization()
